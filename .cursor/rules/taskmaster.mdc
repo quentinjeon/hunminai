@@ -1,0 +1,40 @@
+
+# Route: /
+- Components: FileUpload, ChatBox
+
+# Component: FileUpload
+- Description: 사용자가 문서, 이미지, 오디오를 업로드
+- Accept: pdf, docx, hwp, png, jpg, wav, mp3
+- MaxSize: 50MB
+
+# Component: ChatBox
+- Description: 업로드한 파일을 기반으로 AI와 대화
+- Features: streaming, markdown_render, citation_support
+
+# Route: /tasks
+- Components: TaskTable, TaskForm, UserSelector
+
+# Component: TaskTable
+- Description: 태스크 리스트 표
+- Columns: title, status, assignee, dueDate
+- Pagination: true
+- RowActions: edit, delete
+
+# Component: TaskForm
+- Description: 태스크 생성/수정 폼
+- Fields:
+  - title (text, required)
+  - description (textarea)
+  - assignee (select:user)
+  - dueDate (date)
+  - status (select: todo|in-progress|done)
+
+# Route: /edit
+- Components: RichTextEditor, MetadataForm, SaveButton
+
+# Component: RichTextEditor
+- Description: hwp, markdown, docx 호환 WYSIWYG 에디터
+- Shortcuts: Ctrl+Shift+L (validate), Ctrl+S (save)
+
+# Component: MetadataForm
+- Description: 문서 메타데이터 (title, security_level, tags)

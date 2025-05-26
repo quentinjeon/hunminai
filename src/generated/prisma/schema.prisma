@@ -1,0 +1,105 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+// User 모델
+model User {
+  id                String            @id @default(cuid())
+  name              String?
+  username          String            @unique
+  email             String?           @unique
+  emailVerified     DateTime?
+  password          String // 해싱된 비밀번호
+  image             String?
+  securityClearance SecurityClearance @default(NORMAL)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  accounts          Account[]
+  sessions          Session[]
+}
+
+// Account 모델 (OAuth 제공자 연결)
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+// Session 모델
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// VerificationToken 모델 (이메일 확인용)
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// Document 모델
+model Document {
+  id        String        @id @default(cuid())
+  title     String
+  content   String
+  security  SecurityLevel
+  authorId  String
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@index([security])
+}
+
+// File 모델
+model File {
+  id         String   @id @default(cuid())
+  name       String
+  mimeType   String
+  size       Int
+  url        String   @unique
+  uploadedAt DateTime @default(now())
+}
+
+// 보안 등급 열거형
+enum SecurityLevel {
+  NORMAL
+  CONFIDENTIAL // 대외비
+  SECRET_II // II급비밀
+  SECRET_I // I급비밀
+}
+
+// 사용자 보안 등급 열거형
+enum SecurityClearance {
+  NORMAL // 일반 보안 등급
+  CONFIDENTIAL // 대외비 열람 가능
+  SECRET_II // II급비밀 열람 가능
+  SECRET_I // I급비밀 열람 가능
+}

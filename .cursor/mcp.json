@@ -1,0 +1,65 @@
+{
+  "clientCapabilities": ["markdown_render", "streaming"],
+  "mcpServers": {
+    "task-master-ai": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "--package=task-master-ai",
+        "task-master-ai"
+      ],
+      "env": {
+        "ANTHROPIC_API_KEY": "YOUR_KEY",
+        "PERPLEXITY_API_KEY": "YOUR_KEY",
+        "OPENAI_API_KEY": "YOUR_KEY",
+        "GOOGLE_API_KEY": "YOUR_KEY",
+        "XAI_API_KEY": "YOUR_KEY",
+        "OPENROUTER_API_KEY": "YOUR_KEY",
+        "MISTRAL_API_KEY": "YOUR_KEY",
+        "AZURE_OPENAI_API_KEY": "YOUR_KEY",
+        "OLLAMA_API_KEY": "YOUR_KEY",
+        "NEXTAUTH_URL": "http://localhost:3000",
+        "NEXTAUTH_SECRET": "hcG7ZRF2+zqzON5Hj+VH8Qct0Fe5/PtB9jsINNZs=",
+        "JWT_SECRET": "hcG7ZRF2+zqzON5Hj+VH8Qct0Fe5/PtB9jsINNZs=",
+        "NODE_ENV": "development",
+        "DATABASE_URL": "file:./dev.db"
+      }
+    }
+  },
+  "client": {
+    "framework": "next",
+    "capabilities": [
+      "form",
+      "editor",
+      "upload",
+      "table",
+      "chat"
+    ],
+    "pages": [
+      {
+        "path": "/",
+        "name": "Home",
+        "components": [
+          "FileUpload",
+          "ChatBox"
+        ]
+      },
+      {
+        "path": "/tasks",
+        "name": "Task Dashboard",
+        "components": [
+          "TaskTable",
+          "TaskForm"
+        ]
+      },
+      {
+        "path": "/edit",
+        "name": "Document Editor",
+        "components": [
+          "RichTextEditor",
+          "MetadataForm"
+        ]
+      }
+    ]
+  }
+}

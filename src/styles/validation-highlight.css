@@ -1,0 +1,132 @@
+/* Validation Highlight Styles */
+.validation-highlight {
+  position: relative;
+  border-radius: 2px;
+  padding: 1px 2px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+/* Error highlighting - Red */
+.validation-highlight-error {
+  background-color: rgba(239, 68, 68, 0.15);
+  border-bottom: 2px wavy #ef4444;
+  color: #dc2626;
+}
+
+.validation-highlight-error:hover {
+  background-color: rgba(239, 68, 68, 0.25);
+}
+
+/* Warning highlighting - Yellow/Orange */
+.validation-highlight-warning {
+  background-color: rgba(245, 158, 11, 0.15);
+  border-bottom: 2px wavy #f59e0b;
+  color: #d97706;
+}
+
+.validation-highlight-warning:hover {
+  background-color: rgba(245, 158, 11, 0.25);
+}
+
+/* Suggestion highlighting - Blue */
+.validation-highlight-suggestion {
+  background-color: rgba(59, 130, 246, 0.15);
+  border-bottom: 2px wavy #3b82f6;
+  color: #2563eb;
+}
+
+.validation-highlight-suggestion:hover {
+  background-color: rgba(59, 130, 246, 0.25);
+}
+
+/* Tooltip styles for validation messages */
+.validation-highlight[title]:hover::after {
+  content: attr(title);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #1f2937;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  white-space: nowrap;
+  z-index: 1000;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  margin-bottom: 4px;
+}
+
+.validation-highlight[title]:hover::before {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 4px solid transparent;
+  border-top-color: #1f2937;
+  z-index: 1000;
+}
+
+/* Current error highlighting (when navigating) */
+.validation-highlight.current-error {
+  animation: pulse-highlight 1s ease-in-out;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+}
+
+@keyframes pulse-highlight {
+  0%, 100% {
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.3);
+  }
+}
+
+/* Focus styles for accessibility */
+.validation-highlight:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .validation-highlight-error {
+    background-color: rgba(239, 68, 68, 0.2);
+    color: #fca5a5;
+  }
+  
+  .validation-highlight-warning {
+    background-color: rgba(245, 158, 11, 0.2);
+    color: #fbbf24;
+  }
+  
+  .validation-highlight-suggestion {
+    background-color: rgba(59, 130, 246, 0.2);
+    color: #93c5fd;
+  }
+  
+  .validation-highlight[title]:hover::after {
+    background-color: #374151;
+    color: #f9fafb;
+  }
+  
+  .validation-highlight[title]:hover::before {
+    border-top-color: #374151;
+  }
+}
+
+/* Print styles - remove highlighting for print */
+@media print {
+  .validation-highlight {
+    background-color: transparent !important;
+    border-bottom: none !important;
+    color: inherit !important;
+  }
+  
+  .validation-highlight::after,
+  .validation-highlight::before {
+    display: none !important;
+  }
+} 

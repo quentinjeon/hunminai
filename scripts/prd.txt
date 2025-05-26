@@ -1,0 +1,184 @@
+# Docenty 훈민 AI – 전체 구현 가이드
+
+## 1. 프로젝트 개요
+
+Docenty 훈민 AI는 v0.dev 디자인 코드와 Cursor-AI MCP 규칙을 활용한 온프레미스 군사 문서 작성 시스템입니다. 이 시스템은 다음과 같은 주요 기능을 제공합니다:
+
+- 군사 문서 작성 및 편집
+- AI 기반 문서 검증 및 제안
+- 파일 업로드 및 관리
+- 보안 등급별 문서 접근 제어
+- 실시간 협업 기능
+
+## 2. 기술 스택
+
+### 프론트엔드
+- Next.js 14, TypeScript, Tailwind CSS v3, shadcn/ui v1.8, Lucide-react ^0.292
+- Node >= 20.11
+- 상태 관리: TanStack Query v5, Zustand v4
+
+### 백엔드
+- Next.js Route-Handlers + Prisma 5 (SQLite → Prod: Postgres)
+
+### AI 워커
+- Python 3.10, FastAPI v0.110 + WebSocket (uvicorn)
+- whisper.cpp v1.5 (옵션), llama.cpp 7B-Ko LoRA
+
+### 스토리지
+- MinIO(Server = on-prem S3) – 파일 업로드, HWP 저장
+- Redis 7 (세션 & pub/sub)
+
+### 문서 파서
+- hwplib.js (WASM 빌드) + pdf-lib
+
+### 배포
+- Docker 25, Helm v3, k3s ≥ 1.28
+
+## 3. 시스템 아키텍처
+
+```
+┌──────────────┐      ┌──────────────┐      ┌──────────────┐
+│  Ingress     │──▶──│  Next.js svc │──▶──│  FastAPI svc │──▶ LLM (GPU Pod)
+└──────────────┘      └──────────────┘      └──────────────┘
+       │                       │                     │
+       └──▶ MinIO (S3) ◀───────┘                     │
+               ▲                                      │
+               └── PostgreSQL (RLS) ◀─────────────────┘
+```
+
+## 4. 주요 기능 요구사항
+
+### 4.1 문서 편집기
+- 그리드 기반 12-컬럼 레이아웃 (좌측 패널, 중앙 에디터, 우측 AI 패널)
+- HWP 미리보기 및 코드 편집 모드
+- 폰트, 크기, 줄간격, 스타일, 보안등급 설정 도구
+- 키보드 단축키를 통한 검증 (Ctrl+Shift+L)
+
+### 4.2 지식 라이브러리
+- 좌측 패널에 위치
+- 문서 참조 자료 탐색 및 검색
+- 카테고리별 문서 정리
+
+### 4.3 파일 업로더
+- 드래그 앤 드롭 인터페이스
+- 진행 표시기 및 상태 알림
+- 다양한 파일 형식 지원 (.hwp, .pdf, .jpg, .mp3, .wav 등)
+
+### 4.4 AI 에이전트
+- 문서 작성 제안 및 개선점 제시
+- 실시간 채팅 인터페이스
+- 작성 내용에 대한 피드백 제공
+- 군사 용어 표준화 감시
+
+### 4.5 보안 기능
+- 문서 보안 등급 설정 (일반, 대외비, II급비밀, I급비밀)
+- 사용자 권한 기반 접근 제어
+- Row-Level Security (RLS) 정책
+- 파일 다운로드 보안 (JWT 서명 검증)
+
+## 5. 데이터 모델
+
+```prisma
+// Document 모델
+model Document {
+  id           String   @id @default(cuid())
+  title        String
+  content      String   @db.LongText
+  security     SecurityLevel
+  authorId     String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  @@index([security])
+}
+
+// File 모델
+model File {
+  id        String   @id @default(cuid())
+  name      String
+  mimeType  String
+  size      Int
+  url       String  @unique
+  uploadedAt DateTime @default(now())
+}
+
+// 보안 등급 열거형
+enum SecurityLevel {
+  NORMAL
+  CONFIDENTIAL   // 대외비
+  SECRET_II      // II급비밀
+  SECRET_I       // I급비밀
+}
+```
+
+## 6. 사용자 인터페이스
+
+### 6.1 레이아웃
+- 12-그리드 시스템 사용
+- 좌측 패널: 240px 너비, 지식 라이브러리 및 파일 업로더
+- 중앙 패널: 문서 편집기, 탭으로 HWP 미리보기와 코드 보기 전환
+- 우측 패널: 300px 너비, AI 에이전트
+
+### 6.2 주요 컴포넌트
+- 헤더: 로고, 타이틀
+- 문서 편집기 툴바: 글꼴, 크기, 줄간격, 스타일, 보안등급 선택
+- 지식 라이브러리: 스크롤 영역, 검색, 카테고리별 접근
+- 파일 업로더: 드래그 앤 드롭, 진행 표시기
+- AI 에이전트: 채팅 인터페이스, 제안 표시 영역
+- 상태 바: 커서 위치, 저장 시간, 검증 상태
+
+## 7. 개발 로드맵
+
+### 7.1 Phase 1: 기본 기능 구현
+- 프로젝트 스캐폴드 및 환경 설정
+- 기본 레이아웃 및 UI 컴포넌트 구현
+- Prisma 스키마 및 기본 API 설정
+- 문서 CRUD 기능 구현
+
+### 7.2 Phase 2: 핵심 기능 개발
+- HWP 미리보기 통합
+- 파일 업로드 및 관리 기능
+- AI 에이전트 기본 기능
+- 사용자 인증 및 기본 권한 관리
+
+### 7.3 Phase 3: 고급 기능 및 최적화
+- AI 문서 검증 기능
+- 보안 정책 및 RLS 구현
+- 성능 최적화 및 버그 수정
+- 테스트 및 품질 개선
+
+### 7.4 Phase 4: 배포 및 확장
+- Docker 이미지 구축
+- 헬름 차트 작성 및 k3s 배포
+- 모니터링 및 로깅 구현
+- 사용자 피드백 수렴 및 개선
+
+## 8. 향후 로드맵
+
+- PWA 오프라인 캐시 (Service Worker) – 야전 환경 지원
+- 문서 버전 히스토리 (CRDT) + 리플레이
+- LLM Terminology Guard – 군사 용어 표준화 감시
+- 모바일 Flutter App (편집 + 캡처 업로드)
+
+## 9. 개발 표준 및 규칙
+
+### 9.1 코드 품질
+- ESLint + MCP 규칙 준수
+- 단위 테스트 커버리지 80% 이상
+- PR 시 2명 이상의 리뷰 필요
+
+### 9.2 CI/CD
+- GitHub Actions 워크플로우 구현
+- 린트, 테스트, 빌드 자동화
+- 이미지 빌드 및 배포 자동화
+
+### 9.3 보안 표준
+- OWASP 보안 표준 준수
+- 민감 정보 관리를 위한 보안 수칙
+- 정기적인 보안 검토 및 감사
+
+## 10. 프로젝트 관리
+
+- Jira Epic 및 태스크 체계 사용
+- 담당자(DRI) 지정 및 책임 명확화
+- Definition of Done 명확히 정의
+- 주간 진행 상황 검토 미팅 

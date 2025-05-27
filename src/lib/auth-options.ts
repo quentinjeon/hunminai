@@ -1,20 +1,36 @@
-import CredentialsProvider from 'next-auth/providers/credentials';
-import { prisma } from '@/lib/db';
+﻿import CredentialsProvider from 'next-auth/providers/credentials';
+import { PrismaClient } from '../generated/prisma';
 import { compare } from 'bcrypt';
 import type { SecurityClearance } from '@/types/auth';
 import type { NextAuthOptions } from 'next-auth';
 
+// PrismaClient 초기화를 위한 전역 타입 선언
+const globalForPrisma = global as unknown as { prisma: PrismaClient };
+
+// PrismaClient 싱글톤 인스턴스 생성
+export const prisma = globalForPrisma.prisma || new PrismaClient({
+  log: ['query', 'info', 'warn', 'error'],
+});
+
+// 개발 환경에서만 전역 객체에 할당
+if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
+
+// 환경 변수 검증
+const secret = process.env.NEXTAUTH_SECRET;
+if (!secret || secret.length < 32) {
+  throw new Error('NEXTAUTH_SECRET must be at least 32 characters long');
+}
+
 /**
  * NextAuth 설정
- * 애플리케이션 전체에서 일관된 인증 설정을 위해 분리
+ * 애플리케이션 전체에서 사용할 인증 설정을 위해 분리
  * 서버 컴포넌트에서 사용하기 위해 별도 파일로 분리
  */
 export const authOptions: NextAuthOptions = {
-  // 환경 변수가 로드되지 않으므로 직접 값 설정
-  secret: "hcG7ZRF2+zqzON5Hj+VH8Qct0Fe5/PtB9jsINNZs=",
+  secret,
   
-  // 디버그 모드 비활성화
-  debug: false,
+  // 디버그 모드 활성화
+  debug: process.env.NODE_ENV === 'development',
   
   // PrismaAdapter 대신 Credentials 방식만 사용
   providers: [
@@ -26,37 +42,84 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         if (!credentials?.username || !credentials?.password) {
-          return null;
+          console.log('인증 실패: 자격 증명 누락');
+          throw new Error('사용자 ID와 비밀번호를 입력해주세요.');
         }
         
         // 사용자 ID로 사용자 찾기
         try {
-          const user = await prisma.user.findUnique({
-            where: { username: credentials.username }
+          console.log('=== 인증 시도 시작 ===');
+          console.log('입력된 사용자 정보:', {
+            username: credentials.username,
+            passwordLength: credentials.password.length
           });
           
-          // 사용자 또는 비밀번호 검증 실패 시 null 반환
-          if (!user || !(await compare(credentials.password, user.password))) {
+          const user = await prisma.user.findUnique({
+            where: { username: credentials.username },
+            select: {
+              id: true,
+              username: true,
+              password: true,
+              name: true,
+              email: true,
+              securityClearance: true
+            }
+          });
+          
+          console.log('데이터베이스 조회 결과:', {
+            found: !!user,
+            username: user?.username,
+            hasPassword: !!user?.password,
+            passwordLength: user?.password?.length
+          });
+          
+          if (!user) {
+            console.log('인증 실패: 사용자를 찾을 수 없음');
             return null;
           }
           
-          // 인증 성공 시 사용자 정보 반환
-          return {
-            id: user.id,
-            name: user.name || null,
-            email: user.email || null,
-            username: user.username,
-            securityClearance: user.securityClearance as SecurityClearance
-          };
+          // 비밀번호 비교
+          try {
+            const passwordMatch = await compare(credentials.password, user.password);
+            console.log('비밀번호 비교 결과:', { 
+              passwordMatch,
+              inputLength: credentials.password.length,
+              hashedLength: user.password.length
+            });
+            
+            if (!passwordMatch) {
+              console.log('인증 실패: 비밀번호 불일치');
+              return null;
+            }
+            
+            // 인증 성공 시 사용자 정보 반환
+            console.log('인증 성공:', {
+              id: user.id,
+              username: user.username,
+              name: user.name,
+              securityClearance: user.securityClearance
+            });
+            
+            return {
+              id: user.id,
+              name: user.name || null,
+              email: user.email || null,
+              username: user.username,
+              securityClearance: user.securityClearance as SecurityClearance
+            };
+          } catch (error) {
+            console.error('비밀번호 비교 중 오류:', error);
+            return null;
+          }
         } catch (error) {
-          console.error("Auth error:", error);
+          console.error("인증 처리 중 오류:", error);
           return null;
         }
       }
     })
   ],
   callbacks: {
-    // JWT에 추가 정보 저장
+    // JWT에 추가 정보 포함
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
@@ -79,6 +142,6 @@ export const authOptions: NextAuthOptions = {
   },
   pages: {
     signIn: '/login', // 로그인 페이지 경로
-    error: '/login', // 오류 발생 시 리다이렉트 페이지
+    error: '/login', // 오류 발생 시 리다이렉트할 페이지
   }
 }; 

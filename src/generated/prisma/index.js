@@ -35,12 +35,12 @@ exports.Prisma = Prisma
 exports.$Enums = {}
 
 /**
- * Prisma Client JS version: 6.7.0
- * Query Engine version: 3cff47a7f5d65c3ea74883f1d736e41d68ce91ed
+ * Prisma Client JS version: 6.8.2
+ * Query Engine version: 2060c79ba17c6bb9f5823312b6f6b7f4a845738e
  */
 Prisma.prismaVersion = {
-  client: "6.7.0",
-  engine: "3cff47a7f5d65c3ea74883f1d736e41d68ce91ed"
+  client: "6.8.2",
+  engine: "2060c79ba17c6bb9f5823312b6f6b7f4a845738e"
 }
 
 Prisma.PrismaClientKnownRequestError = PrismaClientKnownRequestError;
@@ -210,12 +210,12 @@ const config = {
     "isCustomOutput": true
   },
   "relativeEnvPaths": {
-    "rootEnvPath": null,
+    "rootEnvPath": "../../../.env",
     "schemaEnvPath": "../../../.env"
   },
   "relativePath": "../../../prisma",
-  "clientVersion": "6.7.0",
-  "engineVersion": "3cff47a7f5d65c3ea74883f1d736e41d68ce91ed",
+  "clientVersion": "6.8.2",
+  "engineVersion": "2060c79ba17c6bb9f5823312b6f6b7f4a845738e",
   "datasourceNames": [
     "db"
   ],
@@ -225,12 +225,12 @@ const config = {
     "db": {
       "url": {
         "fromEnvVar": null,
-        "value": "file:./dev.db"
+        "value": "file:C:/Users/zerot/Desktop/hunmin2/prisma/dev.db"
       }
     }
   },
-  "inlineSchema": "// This is your Prisma schema file,\n// learn more about it in the docs: https://pris.ly/d/prisma-schema\n\ngenerator client {\n  provider = \"prisma-client-js\"\n  output   = \"../src/generated/prisma\"\n}\n\ndatasource db {\n  provider = \"sqlite\"\n  url      = \"file:./dev.db\"\n}\n\n// User 모델\nmodel User {\n  id                String            @id @default(cuid())\n  name              String?\n  username          String            @unique\n  email             String?           @unique\n  emailVerified     DateTime?\n  password          String // 해싱된 비밀번호\n  image             String?\n  securityClearance SecurityClearance @default(NORMAL)\n  createdAt         DateTime          @default(now())\n  updatedAt         DateTime          @updatedAt\n  accounts          Account[]\n  sessions          Session[]\n}\n\n// Account 모델 (OAuth 제공자 연결)\nmodel Account {\n  id                String  @id @default(cuid())\n  userId            String\n  type              String\n  provider          String\n  providerAccountId String\n  refresh_token     String?\n  access_token      String?\n  expires_at        Int?\n  token_type        String?\n  scope             String?\n  id_token          String?\n  session_state     String?\n\n  user User @relation(fields: [userId], references: [id], onDelete: Cascade)\n\n  @@unique([provider, providerAccountId])\n}\n\n// Session 모델\nmodel Session {\n  id           String   @id @default(cuid())\n  sessionToken String   @unique\n  userId       String\n  expires      DateTime\n  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)\n}\n\n// VerificationToken 모델 (이메일 확인용)\nmodel VerificationToken {\n  identifier String\n  token      String   @unique\n  expires    DateTime\n\n  @@unique([identifier, token])\n}\n\n// Document 모델\nmodel Document {\n  id        String        @id @default(cuid())\n  title     String\n  content   String\n  security  SecurityLevel\n  authorId  String\n  createdAt DateTime      @default(now())\n  updatedAt DateTime      @updatedAt\n\n  @@index([security])\n}\n\n// File 모델\nmodel File {\n  id         String   @id @default(cuid())\n  name       String\n  mimeType   String\n  size       Int\n  url        String   @unique\n  uploadedAt DateTime @default(now())\n}\n\n// 보안 등급 열거형\nenum SecurityLevel {\n  NORMAL\n  CONFIDENTIAL // 대외비\n  SECRET_II // II급비밀\n  SECRET_I // I급비밀\n}\n\n// 사용자 보안 등급 열거형\nenum SecurityClearance {\n  NORMAL // 일반 보안 등급\n  CONFIDENTIAL // 대외비 열람 가능\n  SECRET_II // II급비밀 열람 가능\n  SECRET_I // I급비밀 열람 가능\n}\n",
-  "inlineSchemaHash": "91dc4579e2da9859d2fc581d49ac7292c6039515a41b1b5053db121a4faa5cb7",
+  "inlineSchema": "// This is your Prisma schema file,\n// learn more about it in the docs: https://pris.ly/d/prisma-schema\n\ngenerator client {\n  provider = \"prisma-client-js\"\n  output   = \"../src/generated/prisma\"\n}\n\ndatasource db {\n  provider = \"sqlite\"\n  url      = \"file:C:/Users/zerot/Desktop/hunmin2/prisma/dev.db\"\n}\n\n// User 모델\nmodel User {\n  id                String            @id @default(cuid())\n  name              String?\n  username          String            @unique\n  email             String?           @unique\n  emailVerified     DateTime?\n  password          String // 해싱된 비밀번호\n  image             String?\n  securityClearance SecurityClearance @default(NORMAL)\n  createdAt         DateTime          @default(now())\n  updatedAt         DateTime          @updatedAt\n  accounts          Account[]\n  sessions          Session[]\n}\n\n// Account 모델 (OAuth 제공자 연결)\nmodel Account {\n  id                String  @id @default(cuid())\n  userId            String\n  type              String\n  provider          String\n  providerAccountId String\n  refresh_token     String?\n  access_token      String?\n  expires_at        Int?\n  token_type        String?\n  scope             String?\n  id_token          String?\n  session_state     String?\n\n  user User @relation(fields: [userId], references: [id], onDelete: Cascade)\n\n  @@unique([provider, providerAccountId])\n}\n\n// Session 모델\nmodel Session {\n  id           String   @id @default(cuid())\n  sessionToken String   @unique\n  userId       String\n  expires      DateTime\n  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)\n}\n\n// VerificationToken 모델 (이메일 확인용)\nmodel VerificationToken {\n  identifier String\n  token      String   @unique\n  expires    DateTime\n\n  @@unique([identifier, token])\n}\n\n// Document 모델\nmodel Document {\n  id        String        @id @default(cuid())\n  title     String\n  content   String\n  security  SecurityLevel\n  authorId  String\n  createdAt DateTime      @default(now())\n  updatedAt DateTime      @updatedAt\n\n  @@index([security])\n}\n\n// File 모델\nmodel File {\n  id         String   @id @default(cuid())\n  name       String\n  mimeType   String\n  size       Int\n  url        String   @unique\n  uploadedAt DateTime @default(now())\n}\n\n// 보안 등급 열거형\nenum SecurityLevel {\n  NORMAL\n  CONFIDENTIAL // 대외비\n  SECRET_II // II급비밀\n  SECRET_I // I급비밀\n}\n\n// 사용자 보안 등급 열거형\nenum SecurityClearance {\n  NORMAL // 일반 보안 등급\n  CONFIDENTIAL // 대외비 열람 가능\n  SECRET_II // II급비밀 열람 가능\n  SECRET_I // I급비밀 열람 가능\n}\n",
+  "inlineSchemaHash": "e3a86dda5037aa9ff3166e05a6acd8907f9bc413bea01556a0674479da248121",
   "copyEngine": true
 }
 

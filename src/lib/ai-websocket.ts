@@ -61,6 +61,7 @@ interface AIWebSocketStore {
 
 const AI_WEBSOCKET_URL = process.env.NEXT_PUBLIC_AI_WEBSOCKET_URL || 'ws://localhost:8000/ws';
 const RECONNECT_DELAY = 3000; // 3 seconds
+const MAX_RECONNECT_ATTEMPTS = 3; // 최대 재연결 시도 횟수
 
 let connectInstance: (() => void) | null = null;
 let disconnectInstance: (() => void) | null = null;
@@ -82,7 +83,7 @@ export const useAIWebSocket = create<AIWebSocketStore>((set, get) => {
       }
       
       // Don't reconnect if max attempts reached
-      if (state.connectionAttempts >= state.maxReconnectAttempts) {
+      if (state.connectionAttempts >= MAX_RECONNECT_ATTEMPTS) {
         console.error('Max reconnection attempts reached');
         return;
       }
@@ -98,7 +99,8 @@ export const useAIWebSocket = create<AIWebSocketStore>((set, get) => {
             isConnected: true, 
             isConnecting: false, 
             connectionAttempts: 0,
-            socket 
+            socket,
+            maxReconnectAttempts: MAX_RECONNECT_ATTEMPTS
           });
           
           // Send ping to verify connection
@@ -234,7 +236,7 @@ export const useAIWebSocket = create<AIWebSocketStore>((set, get) => {
     messages: [],
     lastValidation: null,
     connectionAttempts: 0,
-    maxReconnectAttempts: 5,
+    maxReconnectAttempts: 3,
     
     // Actions - use stable references
     connect: connectInstance,

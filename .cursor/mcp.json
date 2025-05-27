@@ -19,7 +19,7 @@
         "AZURE_OPENAI_API_KEY": "YOUR_KEY",
         "OLLAMA_API_KEY": "YOUR_KEY",
         "NEXTAUTH_URL": "http://localhost:3000",
-        "NEXTAUTH_SECRET": "hcG7ZRF2+zqzON5Hj+VH8Qct0Fe5/PtB9jsINNZs=",
+        "NEXTAUTH_SECRET": "hcG7ZRF2hcG7ZRF2hcG7ZRF2hcG7ZRhcG7ZRF2hcG7ZRF2hcG7ZRF2hcG7ZRhcG7ZRF2hcG7ZRF2hcG7ZRF2hcG7ZR",
         "JWT_SECRET": "hcG7ZRF2+zqzON5Hj+VH8Qct0Fe5/PtB9jsINNZs=",
         "NODE_ENV": "development",
         "DATABASE_URL": "file:./dev.db"

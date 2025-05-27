@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { renderHWPToHTML, parseHWPFile, HWPDocument } from '@/lib/hwp';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Download, Loader2 } from 'lucide-react';
+import { Download, Loader2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface HwpPreviewProps {
   fileUrl?: string;
@@ -11,13 +11,17 @@ interface HwpPreviewProps {
   className?: string;
 }
 
+interface FileInfo {
+  name: string;
+  size: number;
+  url?: string;
+}
+
 export default function HwpPreview({ fileUrl, file, className = '' }: HwpPreviewProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [hwpDocument, setHwpDocument] = useState<HWPDocument | null>(null);
-  const [htmlContent, setHtmlContent] = useState<string>('');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [zoom, setZoom] = useState(100);
+  const [viewerUrl, setViewerUrl] = useState<string | null>(null);
+  const [fileInfo, setFileInfo] = useState<FileInfo | null>(null);
 
   useEffect(() => {
     loadHwpFile();
@@ -30,25 +34,48 @@ export default function HwpPreview({ fileUrl, file, className = '' }: HwpPreview
       setLoading(true);
       setError(null);
 
-      let fileToProcess: File | ArrayBuffer;
-
       if (file) {
-        fileToProcess = file;
+        // 파일이 직접 제공된 경우 API를 통해 변환
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const response = await fetch('/api/hwp/convert', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!response.ok) {
+          throw new Error('파일을 처리할 수 없습니다.');
+        }
+
+        const data = await response.json();
+        
+        if (data.error) {
+          throw new Error(data.error);
+        }
+
+        const newFileInfo: FileInfo = {
+          name: data.filename,
+          size: data.size,
+          url: data.url
+        };
+        setFileInfo(newFileInfo);
+
+        // Microsoft Office Online Viewer URL 설정
+        const viewUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(data.url)}`;
+        setViewerUrl(viewUrl);
       } else if (fileUrl) {
-        const response = await fetch(fileUrl);
-        if (!response.ok) throw new Error('파일을 불러올 수 없습니다.');
-        fileToProcess = await response.arrayBuffer();
-      } else {
-        throw new Error('파일 또는 URL이 제공되지 않았습니다.');
+        // URL이 직접 제공된 경우
+        const newFileInfo: FileInfo = {
+          name: fileUrl.split('/').pop() || 'document.hwp',
+          size: 0,
+          url: fileUrl
+        };
+        setFileInfo(newFileInfo);
+        
+        const viewUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(fileUrl)}`;
+        setViewerUrl(viewUrl);
       }
-
-      // HWP 문서 파싱
-      const parsedDoc = await parseHWPFile(fileToProcess);
-      setHwpDocument(parsedDoc);
-
-      // HTML 렌더링
-      const html = await renderHWPToHTML(fileToProcess);
-      setHtmlContent(html);
 
     } catch (err) {
       console.error('HWP 파일 로드 오류:', err);
@@ -58,22 +85,11 @@ export default function HwpPreview({ fileUrl, file, className = '' }: HwpPreview
     }
   };
 
-  const changePage = (newPage: number) => {
-    if (hwpDocument && newPage >= 1 && newPage <= hwpDocument.pageCount) {
-      setCurrentPage(newPage);
-    }
-  };
-
-  const changeZoom = (delta: number) => {
-    const newZoom = Math.max(50, Math.min(200, zoom + delta));
-    setZoom(newZoom);
-  };
-
   const downloadFile = () => {
-    if (fileUrl) {
+    if (fileInfo?.url) {
       const link = document.createElement('a');
-      link.href = fileUrl;
-      link.download = hwpDocument?.metadata.title || 'document.hwp';
+      link.href = fileInfo.url;
+      link.download = fileInfo.name;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -82,7 +98,7 @@ export default function HwpPreview({ fileUrl, file, className = '' }: HwpPreview
 
   if (loading) {
     return (
-      <div className={`flex items-center justify-center h-full bg-gray-50 ${className}`}>
+      <div className={cn('flex items-center justify-center h-full bg-gray-50', className)}>
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
           <p className="text-gray-600">HWP 파일을 로드하는 중...</p>
@@ -93,7 +109,7 @@ export default function HwpPreview({ fileUrl, file, className = '' }: HwpPreview
 
   if (error) {
     return (
-      <div className={`flex items-center justify-center h-full bg-gray-50 ${className}`}>
+      <div className={cn('flex items-center justify-center h-full bg-gray-50', className)}>
         <div className="text-center">
           <div className="text-red-500 mb-4">
             <svg className="h-12 w-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -105,7 +121,6 @@ export default function HwpPreview({ fileUrl, file, className = '' }: HwpPreview
           <Button 
             onClick={loadHwpFile} 
             className="mt-4"
-            variant="outline"
           >
             다시 시도
           </Button>
@@ -115,104 +130,50 @@ export default function HwpPreview({ fileUrl, file, className = '' }: HwpPreview
   }
 
   return (
-    <div className={`flex flex-col h-full bg-white ${className}`}>
+    <div className={cn('flex flex-col h-full bg-white', className)}>
       {/* 도구모음 */}
       <div className="flex items-center justify-between p-3 border-b bg-gray-50">
         <div className="flex items-center space-x-2">
           <h3 className="font-medium text-gray-900">
-            {hwpDocument?.metadata.title || 'HWP 문서'}
+            {fileInfo?.name || 'HWP 문서'}
           </h3>
-          {hwpDocument?.metadata.author && (
+          {fileInfo && fileInfo.size > 0 && (
             <span className="text-sm text-gray-500">
-              - {hwpDocument.metadata.author}
+              ({(fileInfo.size / 1024).toFixed(2)} KB)
             </span>
           )}
         </div>
         
         <div className="flex items-center space-x-2">
-          {/* 줌 컨트롤 */}
-          <div className="flex items-center space-x-1">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => changeZoom(-10)}
-              disabled={zoom <= 50}
-            >
-              <ZoomOut className="h-4 w-4" />
-            </Button>
-            <span className="text-sm font-medium w-12 text-center">
-              {zoom}%
-            </span>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => changeZoom(10)}
-              disabled={zoom >= 200}
-            >
-              <ZoomIn className="h-4 w-4" />
-            </Button>
-          </div>
-
           {/* 다운로드 버튼 */}
-          {fileUrl && (
+          {fileInfo?.url && (
             <Button
-              size="sm"
-              variant="outline"
               onClick={downloadFile}
+              className="flex items-center gap-1"
             >
               <Download className="h-4 w-4" />
+              다운로드
             </Button>
           )}
         </div>
       </div>
 
       {/* 문서 내용 */}
-      <div className="flex-1 overflow-auto p-4 bg-gray-100">
-        <div 
-          className="bg-white shadow-lg mx-auto"
-          style={{ 
-            transform: `scale(${zoom / 100})`,
-            transformOrigin: 'top center',
-            minHeight: '100%',
-            width: '210mm', // A4 width
-            maxWidth: '100%'
-          }}
-        >
-          <div 
-            className="p-8"
-            dangerouslySetInnerHTML={{ __html: htmlContent }}
+      <div className="flex-1 overflow-hidden">
+        {viewerUrl ? (
+          <iframe
+            src={viewerUrl}
+            className="w-full h-full border-0"
+            title="HWP 문서 뷰어"
           />
-        </div>
+        ) : (
+          <div className="flex items-center justify-center h-full bg-gray-100 p-4">
+            <p className="text-gray-500">
+              미리보기를 사용할 수 없습니다.
+            </p>
+          </div>
+        )}
       </div>
-
-      {/* 페이지 네비게이션 */}
-      {hwpDocument && hwpDocument.pageCount > 1 && (
-        <div className="flex items-center justify-center space-x-4 p-3 border-t bg-gray-50">
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => changePage(currentPage - 1)}
-            disabled={currentPage === 1}
-          >
-            <ChevronLeft className="h-4 w-4" />
-            이전
-          </Button>
-          
-          <span className="text-sm font-medium">
-            {currentPage} / {hwpDocument.pageCount}
-          </span>
-          
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => changePage(currentPage + 1)}
-            disabled={currentPage === hwpDocument.pageCount}
-          >
-            다음
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
-      )}
     </div>
   );
 } 

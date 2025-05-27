@@ -10,7 +10,8 @@ import {
   FileText,
   Filter,
   Eye,
-  Loader2
+  Loader2,
+  Upload
 } from "lucide-react"
 import Image from "next/image"
 import { Badge } from "@/components/ui/badge"
@@ -20,6 +21,7 @@ import { useToast } from "@/components/ui/use-toast"
 import { useKnowledgeLibrary } from "@/hooks/use-knowledge-library"
 import { KnowledgeDocument } from "@/lib/api"
 import React from "react"
+import FileUploader from "@/components/file-uploader"
 
 // 보안 등급별 색상 설정
 const SECURITY_COLORS = {
@@ -129,6 +131,7 @@ TreeRow.displayName = 'TreeRow'
 
 export default function KnowledgeLibrary() {
   const [isFilterOpen, setIsFilterOpen] = useState(false)
+  const [isUploaderOpen, setIsUploaderOpen] = useState(false)
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [securityFilter, setSecurityFilter] = useState<string | null>(null)
   const [expandedFolders, setExpandedFolders] = useState<string[]>(['root'])
@@ -301,20 +304,39 @@ export default function KnowledgeLibrary() {
         <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
         <Input
           placeholder="문서 검색..."
-          className="pl-8 pr-8"
+          className="pl-8 pr-20"
           onChange={(e) => {
             handleSearchChange(e.target.value)
           }}
         />
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          className="absolute right-1 top-1"
-          onClick={() => setIsFilterOpen(!isFilterOpen)}
-        >
-          <Filter className="h-4 w-4 text-muted-foreground" />
-        </Button>
+        <div className="absolute right-1 top-1 flex gap-1">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => setIsUploaderOpen(!isUploaderOpen)}
+            title="파일 업로드"
+          >
+            <Upload className="h-4 w-4 text-muted-foreground" />
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => setIsFilterOpen(!isFilterOpen)}
+            title="필터"
+          >
+            <Filter className="h-4 w-4 text-muted-foreground" />
+          </Button>
+        </div>
       </div>
+
+      {isUploaderOpen && (
+        <div className="mb-4 border rounded-md p-2 bg-muted/50">
+          <div className="mb-2">
+            <h3 className="text-xs font-medium mb-1">파일 업로드</h3>
+            <FileUploader />
+          </div>
+        </div>
+      )}
 
       {isFilterOpen && (
         <div className="mb-4 border rounded-md p-2 bg-muted/50">

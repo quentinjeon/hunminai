@@ -8,7 +8,7 @@ generator client {
 
 datasource db {
   provider = "sqlite"
-  url      = "file:./dev.db"
+  url      = "file:C:/Users/zerot/Desktop/hunmin2/prisma/dev.db"
 }
 
 // User 모델
